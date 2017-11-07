@@ -17,7 +17,7 @@ int main(int argc, char** argv){
 
 
 	Mat imageIn = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
-//	Mat new_image = Mat::zeros( imageIn.size(), imageIn.type() );
+	
 	
 	
 	if(! imageIn.data ) {
@@ -27,6 +27,10 @@ int main(int argc, char** argv){
 	else {
 		Mat imageOutX, imageOutY, imageOut;
 		int nbCercles = 0;
+		int kernel_size = 3;
+		int scale = 1;
+		int delta = 0;
+		int ddepth = CV_16S;
 		
 		/*Detection de contour*/
 		//Application d'un flou gaussien pour limiter le bruit
@@ -35,21 +39,25 @@ int main(int argc, char** argv){
 		//Application d'un seuil de gris pour lisser
 		threshold(imageIn, imageIn, SEUIL, 255, THRESH_BINARY);
 
+		//Apply the laplcaian operator
+		Laplacian( imageIn, imageOut, CV_16S, kernel_size, scale, delta, BORDER_DEFAULT );
+
 		//Filtre de Sobel sur X
-		//Sobel(imageIn, imageOutX, CV_32F, 1 , 0 , 3, 1, 0, BORDER_DEFAULT); 
+		//Sobel(imageOut, imageOutX, CV_32F, 1 , 0 , 3, 1, 0, BORDER_DEFAULT); 
 
 		//Filtre de Sobel sur Y
-		//Sobel(imageIn, imageOutY, CV_32F, 0 , 1 , 3, 1, 0, BORDER_DEFAULT);
+		//Sobel(imageOut, imageOutY, CV_32F, 0 , 1 , 3, 1, 0, BORDER_DEFAULT);
 
 		//Addition des 2 matrices pour calculer la magnitude du gradient
 		//addWeighted( imageOutX, 0.5, imageOutY, 0.5, 0, imageOut ); 
 
+		
+
 
 		/*Parcours des pixels de contour*/
-		Mat abs_dst;
-		Laplacian( imageIn, imageOut, CV_16S, 3, 1, 0, BORDER_DEFAULT );
-		convertScaleAbs( imageOut, abs_dst );
-		imshow( "laplacian", abs_dst );
+		
+		convertScaleAbs( imageOut, imageOut );
+		imshow( "laplacian", imageOut );
 	
 		int b = 0, nbPixelContour = 0;
 		for( int y = 0; y < imageOut.rows; y++ ) {
