@@ -40,8 +40,10 @@ int main(int argc, char** argv){
 		threshold(imageIn, imageIn, SEUIL, 255, THRESH_BINARY);
 
 		//Apply the laplcaian operator
-		Laplacian( imageIn, imageOut, CV_16S, kernel_size, scale, delta, BORDER_DEFAULT );
+		//Laplacian( imageIn, imageOut, CV_16S, kernel_size, scale, delta, BORDER_DEFAULT );
+		//convertScaleAbs( imageOut, imageOut );		
 
+		
 		//Filtre de Sobel sur X
 		//Sobel(imageOut, imageOutX, CV_32F, 1 , 0 , 3, 1, 0, BORDER_DEFAULT); 
 
@@ -51,14 +53,21 @@ int main(int argc, char** argv){
 		//Addition des 2 matrices pour calculer la magnitude du gradient
 		//addWeighted( imageOutX, 0.5, imageOutY, 0.5, 0, imageOut ); 
 
-		
+		//Test
+		Canny(imageIn, imageOut, 20, 100);
+		vector<Point2i> points;
+		findNonZero(imageOut, points);
+		Mat output(Mat::zeros(imageOut.size(), CV_8UC3));
+/*for (int i = 0; i < points.size(); i++) {
+        output.at<Vec3b>(i) = Vec3b(127, 255, 127);
+ }*/
+/*for (auto const& p : points) {
+        output.at<Vec3b>(p) = Vec3b(127, 255, 127);
+    }*/
+imshow( "test", output );
 
 
 		/*Parcours des pixels de contour*/
-		
-		convertScaleAbs( imageOut, imageOut );
-		imshow( "laplacian", imageOut );
-	
 		int b = 0, nbPixelContour = 0;
 		for( int y = 0; y < imageOut.rows; y++ ) {
 			for( int x = 0; x < imageOut.cols; x++ ) {
@@ -81,7 +90,7 @@ int main(int argc, char** argv){
 		printf("Cercles : %d\n", nbCercles);		
 		
 		//Affichage de l'image
-		//imshow( "Gradient Sobel", imageOut );        
+		//imshow( "laplacian", imageOut );       
 
 		waitKey(0); 
 	}
