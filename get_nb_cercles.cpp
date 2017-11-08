@@ -6,24 +6,18 @@
 
 #define SEUIL 50    
 #define SEUIL_VOTE 57
+#define SEUIL_MAG 220
 #define PI 3.14159265
 #define DELTA_DROITE 0.5
-#define DELTA_CENTRE 3
+#define DELTA_CENTRE 300
 
 using namespace std;
 using namespace cv;
 
 double getPente(int x, int y, int angle) {
 	double angleRad = angle*PI/180;
-	//printf("First: x : %d, y : %d\n", x, y);
-	//printf("Secon: x : %f, y : %f\n", 100*(x+ cos(angle)), 100*(y+ sin(angle)));
-	//printf("Rad : %f\n", cos(angleRad)/sin(angleRad));
-	//printf("Rad : %f\n", cos(angleRad)/sin(angleRad));
-	//printf("cos : %f, sin : %f\n", cos(angleRad), sin(angleRad));
-	//printf("Angle : %d, y : %d, y+cos : %f\n", angle, y, (y+ sin(angleRad))*1000000);
-	//printf("Angle : %d, y : %d, y+cos : %f\n", angle, y, (y+ sin(angleRad))*1000000);
-	//return (y + 100000+(y+ sin(angleRad)))/(x + 100000+(x+ cos(angleRad)));
 	return sin(angleRad)/cos(angleRad);
+	//return (y + y + sin(angleRad))/(x + x + cos(angleRad));
 }
 
 double getOrdOrigine(int x, int y, double pente) {
@@ -39,17 +33,15 @@ int main(int argc, char** argv){
         	return -1;
    	}
 	else {
-		Mat imageOutX, imageOutY, imageOut;//, cercles(Mat::zeros(imageIn.size(), CV_8UC3));
-		Mat new_image = Mat::zeros( imageIn.size(), imageIn.type() );
-		//int sizes[] = { imageIn.cols, imageIn.rows, (int) sqrt(imageIn.cols*imageIn.cols + imageIn.rows*imageIn.rows) };
-		//Mat cercles;
-		//printf("%d, %d, %d \n", imageIn.rows, imageIn.cols, (int) sqrt(imageIn.cols*imageIn.cols + imageIn.rows*imageIn.rows));
-		//Mat cercles(3, sizes, CV_64F);
+		Mat imageOutX, imageOutY, imageOut, votes = Mat::zeros(imageIn.size(), imageIn.type());
+		int height = imageIn.rows;
+		int width = imageIn.cols;
+		int depth = sqrt(height*height + width*width);
+		//printf("%d, %d, %d\n", height, width, depth);
+		//vector<vector<vector<int> > > cercles (height, vector<vector<int> >(width, vector <int>((int) depth, 0)));
+		//vector<vector<vector<int> > > vec (height,vector<vector<int> >(width,vector <int>(1000,12)));
 		int nbCercles = 0;
-		int kernel_size = 3;
-		int scale = 1;
-		int delta = 0;
-		int ddepth = CV_16S;
+		int nbPixelContour = 0;
 		
 		/*Detection de contour*/
 		//Application d'un flou gaussien pour limiter le bruit
@@ -59,9 +51,8 @@ int main(int argc, char** argv){
 		threshold(imageIn, imageIn, SEUIL, 255, THRESH_BINARY);
 
 		//Apply the laplcaian operator
-		//Laplacian( imageIn, imageOut, CV_16S, kernel_size, scale, delta, BORDER_DEFAULT );
-		//convertScaleAbs( imageOut, imageOut );		
-
+		//Laplacian( imageIn, imageOut, CV_16S, 3, 1, 0, BORDER_DEFAULT );
+		//convertScaleAbs( imageOut, imageOut );
 		
 		//Filtre de Sobel sur X
 		Sobel(imageIn, imageOutX, CV_32F, 1 , 0 , 3, 1, 0, BORDER_DEFAULT); 
@@ -76,106 +67,78 @@ int main(int argc, char** argv){
 		Mat mag, angle; 
 		cartToPolar(imageOutX, imageOutY, mag, angle, 1); 
 
-		//Test
-		/*Canny(imageIn, imageOut, 20, 100);
-		vector<Point2i> points;
-		findNonZero(imageOut, points);*/
-		//Mat output(Mat::zeros(imageOut.size(), CV_8UC3));
-		//Mat::zeros(imageOut.size());
-		/*for (int i = 0; i < points.size(); i++) {
-				output.at<Vec3b>(i) = Vec3b(127, 255, 127);
-		 }
-		for (auto const& p : points) {
-				output.at<Vec3b>(p) = Vec3b(127, 255, 127);
-			}
-		imshow( "test", output );*/
-
-
 		/*Parcours des pixels de contour*/
-		int b = 0, nbPixelContour = 0;
 		int first = 0;
-		int limitFirst = 100000;
+		int limitFirst = 10000;
 		for( int y = 0; y < angle.rows && first < limitFirst; y++ ) {
 			for( int x = 0; x < angle.cols && first < limitFirst; x++ ) {
-				//printf("%d\n", imageOut.at<uchar>(y,x));
-				if (mag.at<uchar>(y,x) > 0) {
+				if (mag.at<uchar>(y,x) > SEUIL_MAG) {
 					int angleVal = angle.at<uchar>(y,x);
 					double pente = getPente(x, y, angleVal);
 					double ord = getOrdOrigine(x, y, pente);
+					printf("Angle : %d, mag : %d\n", angle.at<uchar>(y,x), mag.at<uchar>(y,x));
+					/*printf("Pente : %f\n", pente);
+					printf("Ord : %f\n", ord);*/
 					nbPixelContour++;
-					//printf("x : %d, y : %d\n", x, y);
-					//printf("Angle : %d\n", angle.at<uchar>(y,x));
-					//printf("Pente : %f\n", pente);
-					//printf("Ord : %f\n", ord);
-					//printf("Mag : %d\n", mag.at<uchar>(y,x));
 					first++;
 				
 					for( int j = 0; j < imageOut.rows; j++ ) {
 						for( int i = 0; i < imageOut.cols; i++ ) {
+							
+							//Pour chaque point de la droite
 							if (j <= pente*i + ord + DELTA_DROITE && j >= pente*i + ord - DELTA_DROITE) {
-								//printf("Point\n");
-								/*for( int l = j - DELTA_CENTRE; l < j + DELTA_CENTRE && l < new_image.rows; l++ ) {
-									for( int k = - DELTA_CENTRE; k < j + DELTA_CENTRE && k < new_image.cols; k++ ) {
-										if (new_image.at<uchar>(l,k) < 255) {
-											new_image.at<uchar>(l,k)++;
-											//new_image.at<uchar>(j,i) = 255;
+								if (votes.at<uchar>(j,i) < 255) {
+									votes.at<uchar>(j,i) = 255;
+								}
+								//On vérifie s'il n'existe pas déjà un cercle
+								int xCercle = i;
+								int yCercle = j;
+								int max = votes.at<uchar>(j,i);
+								for( int l = j - DELTA_CENTRE; l < j + DELTA_CENTRE && l < votes.rows && l >= 0; l++ ) {
+									for( int k = - DELTA_CENTRE; k < j + DELTA_CENTRE && k < votes.cols && k >= 0; k++ ) {
+										if (votes.at<uchar>(l,k) > max) {
+											xCercle = k;
+											yCercle = l;
 										}
+										//if (votes.at<uchar>(l,k) < 255) {
+											//votes.at<uchar>(l,k)++;
+										//	votes.at<uchar>(j,i) = 255;
+										//}
 									}
-								}*/
-								if (new_image.at<uchar>(j,i) < 255) {
-									new_image.at<uchar>(j,i)++;
-									//new_image.at<uchar>(j,i) = 255;
+								}
+								if (votes.at<uchar>(yCercle,xCercle) < 255) {
+									//votes.at<uchar>(yCercle,xCercle)++;
 								}
 								
 							}
 						}
 					}
-					
-					// TODO trouver le cercle qui passe par ce point
-					// TODO voter pour ce cercle
-				}
-				else {
-					b++;
 				}
 			}
 		}
-		for( int y = 0; y < new_image.rows && first < limitFirst; y++ ) {
-			for( int x = 0; x < new_image.cols && first < limitFirst; x++ ) {
-				if (new_image.at<uchar>(y,x) > SEUIL_VOTE) {
-					new_image.at<uchar>(y,x) = 255;
+		/*Parcours des cercles (avec leurs votes)*/
+		for( int y = 0; y < votes.rows; y++ ) {
+			for( int x = 0; x < votes.cols ; x++ ) {
+				if (votes.at<uchar>(y,x) > SEUIL_VOTE) {
+					//votes.at<uchar>(y,x) = 255;
 					nbCercles++;
 				}
 				else {
-					new_image.at<uchar>(y,x) = 0;
+					//votes.at<uchar>(y,x) = 0;
 				}
 			}
 		}
 		printf("Pixels de contour : %d\n", nbPixelContour);
-		printf("Autres : %d\n", b);
 
-		/*Parcours des cercles (avec leurs votes)*/
 		// TODO faire boucle qui vérifie si le cercle a reçu assez de vote
 		printf("Cercles : %d\n", nbCercles);		
 		
 		//Affichage de l'image
-		imshow( "laplacian", new_image );       
-		//imshow( "laplacian", new_image );       
+		//imshow( "out", imageOut );       
+		imshow( "laplacian", votes );       
 
 		waitKey(0); 
-	}
-	
-//	for( int y = 0; y < imageIn.rows; y++ ) {
-//        for( int x = 0; x < imageIn.cols; x++ ) {
-//        	if (imageIn.at<uchar>(y,x) < SEUIL)
-//         	new_image.at<uchar>(y,x) = 0;
-//        	else
-//            	new_image.at<uchar>(y,x) = 255;
-//        }
-//    }
-       
-	
-	       	
-
+	} 
 	
 	return 0;
 }
