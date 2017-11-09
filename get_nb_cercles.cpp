@@ -83,8 +83,8 @@ int main(int argc, char** argv){
 		cartToPolar(imageOutX, imageOutY, mag, angle, 1); 
 
 		/*Parcours des pixels de contour*/
-		int first = 0;
-		int limitFirst = 100000;
+		/*int first = 0;
+		int limitFirst = 100000000;
 		for( int y = 0; y < angle.rows && first < limitFirst; y++ ) {
 			for( int x = 0; x < angle.cols && first < limitFirst; x++ ) {
 				//Si c'est un point de contour
@@ -116,8 +116,6 @@ int main(int argc, char** argv){
 									for(int unsigned l = j - DELTA_CENTRE; l < j + DELTA_CENTRE && l < votesCercles.size() && l >= 0; l++){
 										for(int unsigned k = i - DELTA_CENTRE; k < i + DELTA_CENTRE && k < votesCercles[l].size() && k >= 0; k++){
 											for(int unsigned r = rayon - DELTA_RAYON; r < rayon + DELTA_RAYON && r < votesCercles[l][k].size() && r >= 0; r++){
-												//printf("toto\n");
-												
 												if (votesCercles[l][k][r] > max) {
 													xCercle = k;
 													yCercle = l;
@@ -127,46 +125,35 @@ int main(int argc, char** argv){
 										}
 									}
 									votesCercles[yCercle][xCercle][rayonCercle]++;
-									/*for( int l = j - DELTA_CENTRE; l < j + DELTA_CENTRE && l < votes.rows && l >= 0; l++ ) {
-										for( int k = i - DELTA_CENTRE; k < j + DELTA_CENTRE && k < votes.cols && k >= 0; k++ ) {
-											if (votes.at<uchar>(l,k) > max) {
-												xCercle = k;
-												yCercle = l;
-											}
-											//if (votes.at<uchar>(l,k) < 255) {
-												//votes.at<uchar>(l,k)++;
-											//	votes.at<uchar>(j,i) = 255;
-											//}
-										}
-									}*/
-									
 								}
-								//On vérifie s'il n'existe pas déjà un cercle
-								/*int xCercle = i;
-								int yCercle = j;
-								int max = votes.at<uchar>(j,i);
-								for( int l = j - DELTA_CENTRE; l < j + DELTA_CENTRE && l < votes.rows && l >= 0; l++ ) {
-									for( int k = - DELTA_CENTRE; k < j + DELTA_CENTRE && k < votes.cols && k >= 0; k++ ) {
-										if (votes.at<uchar>(l,k) > max) {
-											xCercle = k;
-											yCercle = l;
-										}
-										//if (votes.at<uchar>(l,k) < 255) {
-											//votes.at<uchar>(l,k)++;
-										//	votes.at<uchar>(j,i) = 255;
-										//}
-									}
-								}
-								if (votes.at<uchar>(yCercle,xCercle) < 255) {
-									//votes.at<uchar>(yCercle,xCercle)++;
-								}*/
 							}
 						}
 					}
 				}
 			}
-		}		
-		for(int unsigned y = 0; y < votesCercles.size(); y++){
+		}*/
+		/*Parcours des pixels de contour*/
+		/*for( int y1 = 0; y1 < imageOut.rows; y1++ ) {
+			for( int x1 = 0; x1 < imageOut.cols; x1++ ) {
+				if (imageOut.at<uchar>(y1,x1) > 0) {
+					for( int y2 = 0; y2 < imageOut.rows; y2++ ) {
+						for( int x2 = 0; x2 < imageOut.cols; x2++ ) {
+							if (imageOut.at<uchar>(y2,x2) > 0) {
+								for( int y3 = 0; y3 < imageOut.rows; y3++ ) {
+									for( int x3 = 0; x3 < imageOut.cols; x3++ ) {
+										if (imageOut.at<uchar>(y3,x3) > 0) {
+										//On vote pour le cercle qui passe par ces 3 points
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}*/
+		//On regarde les votes
+		/*for(int unsigned y = 0; y < votesCercles.size(); y++){
 			for(int unsigned x = 0; x < votesCercles[y].size(); x++){
 				for(int unsigned r = 0; r < votesCercles[y][x].size(); r++){
 					if (votesCercles[y][x][r] >= SEUIL_VOTE) {
@@ -183,7 +170,7 @@ int main(int argc, char** argv){
 					}
 				} 
 			} 
-		}
+		}*/
 		printf("Pixels de contour : %d\n", nbPixelContour);
 		printf("Cercles : %d\n", nbCercles);		
 		
