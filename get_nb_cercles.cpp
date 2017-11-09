@@ -2,14 +2,16 @@
 #include <stdio.h>
 #include <iostream>
 
-
-
 #define SEUIL 50    
-#define SEUIL_VOTE 57
+#define SEUIL_VOTE 14
 #define SEUIL_MAG 220
+#define SEUIL_RAYON 10
 #define PI 3.14159265
 #define DELTA_DROITE 0.5
+#define DELTA_CERCLE 50
 #define DELTA_CENTRE 300
+#define DELTA_RAYON 2
+#define MAX_RAYON 800
 
 using namespace std;
 using namespace cv;
@@ -24,6 +26,19 @@ double getOrdOrigine(int x, int y, double pente) {
 	return y - pente*x;
 }
 
+int getRayon(int x1, int y1, int x2, int y2) {
+	return (int) sqrt((x2 - x1)*(x2 - x1) + (y2 -y1)*(y2 -y1));
+}
+
+bool belongsToDoite(double pente, double ord, int i, int j) {
+	return (j <= pente*i + ord + DELTA_DROITE && j >= pente*i + ord - DELTA_DROITE);
+}
+
+bool belongsToCircle(int x, int y, int r, int i, int j) {
+	double equationCercle = (x - i)*(x - i) + (y - j)*(y - j);
+	return (r*r > equationCercle - DELTA_CERCLE && r*r < equationCercle + DELTA_CERCLE);
+}
+
 int main(int argc, char** argv){
 	
 	Mat imageIn = imread( argv[1], CV_LOAD_IMAGE_GRAYSCALE );
@@ -33,13 +48,13 @@ int main(int argc, char** argv){
         	return -1;
    	}
 	else {
-		Mat imageOutX, imageOutY, imageOut, votes = Mat::zeros(imageIn.size(), imageIn.type());
+		Mat imageOutX, imageOutY, imageOut, votes = Mat::zeros(imageIn.size(), imageIn.type()), cercles = Mat::zeros(imageIn.size(), imageIn.type());
 		int height = imageIn.rows;
 		int width = imageIn.cols;
-		int depth = sqrt(height*height + width*width);
+		int depth = 800;
 		//printf("%d, %d, %d\n", height, width, depth);
 		//vector<vector<vector<int> > > cercles (height, vector<vector<int> >(width, vector <int>((int) depth, 0)));
-		//vector<vector<vector<int> > > vec (height,vector<vector<int> >(width,vector <int>(1000,12)));
+		vector<vector<vector<int> > > votesCercles (height,vector<vector<int> >(width,vector <int>(1000,12)));
 		int nbCercles = 0;
 		int nbPixelContour = 0;
 		
@@ -69,14 +84,14 @@ int main(int argc, char** argv){
 
 		/*Parcours des pixels de contour*/
 		int first = 0;
-		int limitFirst = 10000;
+		int limitFirst = 1;
 		for( int y = 0; y < angle.rows && first < limitFirst; y++ ) {
 			for( int x = 0; x < angle.cols && first < limitFirst; x++ ) {
 				if (mag.at<uchar>(y,x) > SEUIL_MAG) {
 					int angleVal = angle.at<uchar>(y,x);
 					double pente = getPente(x, y, angleVal);
 					double ord = getOrdOrigine(x, y, pente);
-					printf("Angle : %d, mag : %d\n", angle.at<uchar>(y,x), mag.at<uchar>(y,x));
+					//printf("Angle : %d, mag : %d\n", angle.at<uchar>(y,x), mag.at<uchar>(y,x));
 					/*printf("Pente : %f\n", pente);
 					printf("Ord : %f\n", ord);*/
 					nbPixelContour++;
@@ -86,12 +101,19 @@ int main(int argc, char** argv){
 						for( int i = 0; i < imageOut.cols; i++ ) {
 							
 							//Pour chaque point de la droite
-							if (j <= pente*i + ord + DELTA_DROITE && j >= pente*i + ord - DELTA_DROITE) {
+							//if (j <= pente*i + ord + DELTA_DROITE && j >= pente*i + ord - DELTA_DROITE) {
+							if (belongsToDoite(pente, ord, i, j)) {
 								if (votes.at<uchar>(j,i) < 255) {
-									votes.at<uchar>(j,i) = 255;
+									int rayon = getRayon(x, y, i, j);
+									if (rayon > SEUIL_RAYON && rayon < MAX_RAYON) {
+										//printf("Rayon : %d\n", rayon);
+										votesCercles[j][i][rayon] ++;
+										cercles.at<uchar>(j,i) = 255;
+									}
+									
 								}
 								//On vérifie s'il n'existe pas déjà un cercle
-								int xCercle = i;
+								/*int xCercle = i;
 								int yCercle = j;
 								int max = votes.at<uchar>(j,i);
 								for( int l = j - DELTA_CENTRE; l < j + DELTA_CENTRE && l < votes.rows && l >= 0; l++ ) {
@@ -108,7 +130,7 @@ int main(int argc, char** argv){
 								}
 								if (votes.at<uchar>(yCercle,xCercle) < 255) {
 									//votes.at<uchar>(yCercle,xCercle)++;
-								}
+								}*/
 								
 							}
 						}
@@ -117,9 +139,9 @@ int main(int argc, char** argv){
 			}
 		}
 		/*Parcours des cercles (avec leurs votes)*/
-		for( int y = 0; y < votes.rows; y++ ) {
+		/*for( int y = 0; y < votes.rows; y++ ) {
 			for( int x = 0; x < votes.cols ; x++ ) {
-				if (votes.at<uchar>(y,x) > SEUIL_VOTE) {
+				if (votes.at<uchar>(y,x) >= SEUIL_VOTE) {
 					//votes.at<uchar>(y,x) = 255;
 					nbCercles++;
 				}
@@ -127,7 +149,32 @@ int main(int argc, char** argv){
 					//votes.at<uchar>(y,x) = 0;
 				}
 			}
-		}
+		}*/
+		
+		for(int unsigned y = 0; y < votesCercles.size(); y++){
+			for(int unsigned x = 0; x < votesCercles[y].size(); x++){
+				for(int unsigned r = 0; r < votesCercles[y][x].size(); r++){
+					if (votesCercles[y][x][r] >= SEUIL_VOTE) {
+						nbCercles++;
+						//printf("Cerlces : x0 : %d, y0 : %d, Rayon : %d, votes : %d\n", x, y, r, votesCercles[y][x][r]);
+						for( int j = 0; j < cercles.rows; j++ ) {
+							for( int i = 0; i < cercles.cols; i++ ) {
+								if (belongsToCircle(x, y, r, i, j)) {
+									cercles.at<uchar>(i,j) = 255;
+								}
+							}
+						}
+					}
+				} 
+			} 
+		} 
+		/*for( int j = 0; j < cercles.rows; j++ ) {
+			for( int i = 0; i < cercles.cols; i++ ) {
+				if (belongsToCircle(200, 200, 50, i, j)) {
+					cercles.at<uchar>(j,i) = 255;
+				}
+			}
+		}*/
 		printf("Pixels de contour : %d\n", nbPixelContour);
 
 		// TODO faire boucle qui vérifie si le cercle a reçu assez de vote
@@ -135,7 +182,8 @@ int main(int argc, char** argv){
 		
 		//Affichage de l'image
 		//imshow( "out", imageOut );       
-		imshow( "laplacian", votes );       
+		//imshow( "votes", votes );       
+		imshow( "Cercles", cercles );       
 
 		waitKey(0); 
 	} 
