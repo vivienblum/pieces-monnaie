@@ -109,6 +109,7 @@ int main(int argc, char** argv){
 													xCercle = k;
 													yCercle = l;
 													rayonCercle = r;
+													max = votesCercles[l][k][r];
 												}
 											}
 										}
