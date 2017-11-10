@@ -3,7 +3,7 @@
 #include <iostream>
 
 #define SEUIL 50    
-#define SEUIL_VOTE 24
+#define SEUIL_VOTE 17
 #define SEUIL_MAG 10
 #define SEUIL_RAYON 10
 #define PI 3.14159265
@@ -47,7 +47,7 @@ int main(int argc, char** argv){
 		return -1;
    	}
 	else {
-		Mat imageOutX, imageOutY, imageOut, cercles = Mat::zeros(imageIn.size(), imageIn.type());
+		Mat imageOutX, imageOutY, absImageOutX, absImageOutY, imageOut, cercles = Mat::zeros(imageIn.size(), imageIn.type());
 		
 		int height = imageIn.rows;
 		int width = imageIn.cols;
@@ -59,7 +59,7 @@ int main(int argc, char** argv){
 		
 		/*Detection de contour*/
 		//Application d'un flou gaussien pour limiter le bruit
-		GaussianBlur( imageIn, imageIn, Size(5,5), 0, 0, BORDER_DEFAULT );
+		GaussianBlur( imageIn, imageIn, Size(3,3), 0, 0, BORDER_DEFAULT );
 		
 		//Application d'un seuil de gris pour lisser
 		threshold(imageIn, imageIn, SEUIL, 255, THRESH_BINARY);
@@ -70,12 +70,15 @@ int main(int argc, char** argv){
 		
 		//Filtre de Sobel sur X
 		Sobel(imageIn, imageOutX, CV_32F, 1 , 0 , 3, 1, 0, BORDER_DEFAULT); 
+		convertScaleAbs( imageOutX, absImageOutX );
 
 		//Filtre de Sobel sur Y
 		Sobel(imageIn, imageOutY, CV_32F, 0 , 1 , 3, 1, 0, BORDER_DEFAULT);
+		convertScaleAbs( imageOutY, absImageOutY );
 
 		//Addition des 2 matrices pour calculer la magnitude du gradient
-		addWeighted( imageOutX, 0.5, imageOutY, 0.5, 0, imageOut ); 
+		addWeighted( absImageOutX, 0.5, absImageOutY, 0.5, 0, imageOut ); 
+		
 
 		//Gradient
 		Mat mag, angle; 
